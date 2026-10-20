@@ -219,3 +219,70 @@ plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
 plt.tight_layout()
 plt.show()
 
+
+ts_data = df[(df['APMC_Mandi'] == 'Lasalgaon APMC') & (df['Commodity'] == 'Onion')].copy()
+ts_data = ts_data.set_index('Date').asfreq('MS')
+
+# Visual 9: Time-Series Seasonal Decomposition
+decomp = seasonal_decompose(ts_data['Min_Wholesale_Price_Rs_Qtl'], model='additive', period=12)
+fig = decomp.plot()
+fig.set_size_inches(12, 8)
+fig.suptitle('Visual 9: Time-Series Seasonal Decomposition (Lasalgaon Onion)', fontsize=14, fontweight='bold', y=1.02)
+plt.tight_layout()
+plt.show()
+
+# Visual 10: Autocorrelation (ACF) & Partial Autocorrelation (PACF) Plots
+fig, axes = plt.subplots(1, 2, figsize=(14, 4))
+plot_acf(ts_data['Min_Wholesale_Price_Rs_Qtl'], lags=24, ax=axes[0])
+plot_pacf(ts_data['Min_Wholesale_Price_Rs_Qtl'], lags=24, ax=axes[1])
+axes[0].set_title('Autocorrelation (ACF)', fontweight='bold')
+axes[1].set_title('Partial Autocorrelation (PACF)', fontweight='bold')
+plt.suptitle('Visual 10: ACF & PACF Lag Identification', fontsize=14, fontweight='bold', y=1.05)
+plt.tight_layout()
+plt.show()
+
+# Train / Test Split (Train: 2018-2024, Test: 2025)
+train = ts_data[ts_data.index < '2025-01-01']
+test = ts_data[ts_data.index >= '2025-01-01']
+
+# Fit SARIMAX Model
+exog_cols = ['Transport_Cost_Rs_Qtl', 'Market_Arrivals_Tonnes', 'Temp_Anomaly_C']
+sarimax_model = SARIMAX(train['Min_Wholesale_Price_Rs_Qtl'], 
+                        exog=train[exog_cols], 
+                        order=(1, 1, 1), 
+                        seasonal_order=(1, 1, 0, 12)).fit(disp=False)
+
+forecast_res = sarimax_model.get_forecast(steps=len(test), exog=test[exog_cols])
+forecast_mean = forecast_res.predicted_mean
+conf_int = forecast_res.conf_int()
+
+plt.figure(figsize=(12, 6))
+plt.plot(train.index, train['Min_Wholesale_Price_Rs_Qtl'], label='Train Historical', color='blue')
+plt.plot(test.index, test['Min_Wholesale_Price_Rs_Qtl'], label='Test Actual Ground Truth', color='black', linewidth=2)
+plt.plot(test.index, forecast_mean, label='SARIMAX Forecast', color='red', linestyle='--')
+plt.fill_between(test.index, conf_int.iloc[:, 0], conf_int.iloc[:, 1], color='pink', alpha=0.5, label='95% Confidence Interval')
+plt.title('Visual 11: SARIMAX Model Out-of-Sample Price Forecast (Lasalgaon Onion)', fontsize=14, fontweight='bold')
+plt.xlabel('Date', fontsize=12)
+plt.ylabel('Min Wholesale Price (Rs/Qtl)', fontsize=12)
+plt.legend()
+plt.tight_layout()
+plt.show()
+
+# Fit Random Forest Regressor & Visual 12: Feature Importance
+X_train, y_train = train[drivers], train['Min_Wholesale_Price_Rs_Qtl']
+X_test, y_test = test[drivers], test['Min_Wholesale_Price_Rs_Qtl']
+
+rf_model = RandomForestRegressor(n_estimators=100, random_state=42)
+rf_model.fit(X_train, y_train)
+rf_preds = rf_model.predict(X_test)
+
+importances = pd.Series(rf_model.feature_importances_, index=drivers).sort_values(ascending=True)
+
+# Visual 12: Driver Weight / Feature Importance Bar Chart
+plt.figure(figsize=(10, 5))
+importances.plot(kind='barh', color='darkgreen')
+plt.title('Visual 12: Random Forest Multi-Factor Feature Importance', fontsize=14, fontweight='bold')
+plt.xlabel('Relative Importance Score', fontsize=12)
+plt.ylabel('Driver Variable', fontsize=12)
+plt.tight_layout()
+plt.show()
