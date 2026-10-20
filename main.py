@@ -286,3 +286,21 @@ plt.xlabel('Relative Importance Score', fontsize=12)
 plt.ylabel('Driver Variable', fontsize=12)
 plt.tight_layout()
 plt.show()
+
+
+def calculate_metrics(y_true, y_pred):
+    mae = mean_absolute_error(y_true, y_pred)
+    rmse = np.sqrt(mean_squared_error(y_true, y_pred))
+    mape = np.mean(np.abs((y_true - y_pred) / y_true)) * 100
+    r2 = r2_score(y_true, y_pred)
+    return round(mae, 2), round(rmse, 2), round(mape, 2), round(r2, 2)
+
+sarimax_metrics = calculate_metrics(test['Min_Wholesale_Price_Rs_Qtl'], forecast_mean)
+rf_metrics = calculate_metrics(test['Min_Wholesale_Price_Rs_Qtl'], rf_preds)
+
+print("=== TABLE 5: Forecasting Model Evaluation Benchmarks ===")
+table5 = pd.DataFrame([
+    {'Model Architecture': 'Multivariate SARIMAX', 'MAE (Rs/Qtl)': sarimax_metrics[0], 'RMSE (Rs/Qtl)': sarimax_metrics[1], 'MAPE (%)': sarimax_metrics[2], 'R² Score': sarimax_metrics[3]},
+    {'Model Architecture': 'Random Forest Regressor', 'MAE (Rs/Qtl)': rf_metrics[0], 'RMSE (Rs/Qtl)': rf_metrics[1], 'MAPE (%)': rf_metrics[2], 'R² Score': rf_metrics[3]}
+])
+print(table5.to_string(index=False))
