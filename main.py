@@ -223,7 +223,6 @@ plt.show()
 ts_data = df[(df['APMC_Mandi'] == 'Lasalgaon APMC') & (df['Commodity'] == 'Onion')].copy()
 ts_data = ts_data.set_index('Date').asfreq('MS')
 
-# Visual 9: Time-Series Seasonal Decomposition
 decomp = seasonal_decompose(ts_data['Min_Wholesale_Price_Rs_Qtl'], model='additive', period=12)
 fig = decomp.plot()
 fig.set_size_inches(12, 8)
@@ -231,7 +230,6 @@ fig.suptitle('Visual 9: Time-Series Seasonal Decomposition (Lasalgaon Onion)', f
 plt.tight_layout()
 plt.show()
 
-# Visual 10: Autocorrelation (ACF) & Partial Autocorrelation (PACF) Plots
 fig, axes = plt.subplots(1, 2, figsize=(14, 4))
 plot_acf(ts_data['Min_Wholesale_Price_Rs_Qtl'], lags=24, ax=axes[0])
 plot_pacf(ts_data['Min_Wholesale_Price_Rs_Qtl'], lags=24, ax=axes[1])
@@ -241,11 +239,9 @@ plt.suptitle('Visual 10: ACF & PACF Lag Identification', fontsize=14, fontweight
 plt.tight_layout()
 plt.show()
 
-# Train / Test Split (Train: 2018-2024, Test: 2025)
 train = ts_data[ts_data.index < '2025-01-01']
 test = ts_data[ts_data.index >= '2025-01-01']
 
-# Fit SARIMAX Model
 exog_cols = ['Transport_Cost_Rs_Qtl', 'Market_Arrivals_Tonnes', 'Temp_Anomaly_C']
 sarimax_model = SARIMAX(train['Min_Wholesale_Price_Rs_Qtl'], 
                         exog=train[exog_cols], 
@@ -268,7 +264,7 @@ plt.legend()
 plt.tight_layout()
 plt.show()
 
-# Fit Random Forest Regressor & Visual 12: Feature Importance
+
 X_train, y_train = train[drivers], train['Min_Wholesale_Price_Rs_Qtl']
 X_test, y_test = test[drivers], test['Min_Wholesale_Price_Rs_Qtl']
 
@@ -278,7 +274,6 @@ rf_preds = rf_model.predict(X_test)
 
 importances = pd.Series(rf_model.feature_importances_, index=drivers).sort_values(ascending=True)
 
-# Visual 12: Driver Weight / Feature Importance Bar Chart
 plt.figure(figsize=(10, 5))
 importances.plot(kind='barh', color='darkgreen')
 plt.title('Visual 12: Random Forest Multi-Factor Feature Importance', fontsize=14, fontweight='bold')
